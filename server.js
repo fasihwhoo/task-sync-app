@@ -10,7 +10,9 @@ app.use(express.json());
 
 // Basic route
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to the API' });
+    res.send(
+        'Server is running! Go to /tasks to fetch tasks.' + ` visit http://localhost:${PORT}/tasks to fetch tasks.`
+    );
 });
 
 // Todoist tasks route
@@ -27,5 +29,5 @@ app.get('/tasks', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}, Vist http://localhost:${PORT}/.`);
 });

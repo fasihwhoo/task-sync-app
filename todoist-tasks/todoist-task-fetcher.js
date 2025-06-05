@@ -10,31 +10,80 @@ if (!TODOIST_API_TOKEN) {
     process.exit(1);
 }
 
-async function fetchTodoistTasks() {
+async function fetchActiveTasks() {
     try {
         const response = await axios.get('https://api.todoist.com/rest/v2/tasks', {
             headers: {
                 Authorization: `Bearer ${TODOIST_API_TOKEN}`,
             },
         });
+        console.log('Successfully fetched active tasks');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching active tasks:', error.response?.data || error.message);
+        throw error;
+    }
+}
 
-        const tasks = response.data;
-
-        // Create timestamp for the filename
+async function fetchCompletedTasks() {
+    try {
+        // Get completed tasks from the last 7 days (Todoist API limit)
         const now = new Date();
+        const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+        const sinceStr = since.toISOString().slice(0, 10); // Format: YYYY-MM-DD
 
-        const timestamp =
-            now.getFullYear() +
-            '-' +
-            String(now.getMonth() + 1).padStart(2, '0') +
-            '-' +
-            String(now.getDate()).padStart(2, '0') +
-            '--' +
-            String(now.getHours()).padStart(2, '0') +
-            '-' +
-            String(now.getMinutes()).padStart(2, '0') +
-            '-' +
-            String(now.getSeconds()).padStart(2, '0');
+        console.log('Fetching completed tasks since:', sinceStr);
+
+        // First get all completed task IDs
+        const completedResponse = await axios.get('https://api.todoist.com/sync/v9/completed/get_all', {
+            headers: {
+                Authorization: `Bearer ${TODOIST_API_TOKEN}`,
+            },
+            params: {
+                since: sinceStr,
+                limit: 200, // Maximum allowed by API
+            },
+        });
+
+        const completedItems = completedResponse.data.items || [];
+        console.log(`Found ${completedItems.length} completed tasks`);
+
+        // Then get full task details for each completed task
+        const completedTasksWithDetails = completedItems.map((item) => ({
+            ...item,
+            is_completed: true,
+            completed_at: item.completed_date,
+        }));
+
+        console.log(`Successfully processed ${completedTasksWithDetails.length} completed tasks`);
+        return completedTasksWithDetails;
+    } catch (error) {
+        console.error('Error fetching completed tasks:', error.response?.data || error.message);
+        if (error.response) {
+            console.error('API Response:', {
+                status: error.response.status,
+                data: error.response.data,
+            });
+        }
+        throw error;
+    }
+}
+
+async function fetchTodoistTasks() {
+    try {
+        // Fetch both active and completed tasks
+        console.log('Starting to fetch all tasks...');
+        const [activeTasks, completedTasks] = await Promise.all([fetchActiveTasks(), fetchCompletedTasks()]);
+
+        console.log(`Fetched ${activeTasks.length} active tasks and ${completedTasks.length} completed tasks`);
+
+        // Combine tasks and ensure completed tasks are marked
+        const allTasks = [...activeTasks, ...completedTasks];
+
+        // Create timestamp for the filename using real current date
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '--').slice(0, 19);
+
         const fileName = `todoist-tasks-${timestamp}.json`;
         const logsDir = path.join(__dirname, '..', 'logs');
 
@@ -44,12 +93,19 @@ async function fetchTodoistTasks() {
         const filePath = path.join(logsDir, fileName);
 
         // Save tasks to file
-        await fs.writeFile(filePath, JSON.stringify(tasks, null, 2));
+        await fs.writeFile(filePath, JSON.stringify(allTasks, null, 2));
         console.log(`Tasks saved to ${filePath}`);
 
-        return tasks;
+        return allTasks;
     } catch (error) {
-        console.error('Error fetching Todoist tasks:', error.response?.data || error.message);
+        console.error('Error in fetchTodoistTasks:', error.message);
+        if (error.response) {
+            console.error('API Response:', {
+                status: error.response.status,
+                data: error.response.data,
+                headers: error.response.headers,
+            });
+        }
         throw error;
     }
 }

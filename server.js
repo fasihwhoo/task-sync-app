@@ -24,11 +24,25 @@ app.get('/', (req, res) => {
 // Todoist tasks routes
 app.get('/tasks/sync', async (req, res) => {
     try {
+        console.log('Starting task sync...');
         const syncedCount = await syncTodoistTasks();
-        res.json({ message: `Successfully synced ${syncedCount} tasks from Todoist` });
+        console.log('Sync completed:', syncedCount);
+        res.json({
+            message: `Successfully synced tasks from Todoist`,
+            stats: syncedCount,
+        });
     } catch (error) {
-        console.error('Error:', error.message);
-        res.status(500).json({ error: 'Failed to sync Todoist tasks' });
+        console.error('Error in sync endpoint:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            stack: error.stack,
+        });
+        res.status(500).json({
+            error: 'Failed to sync Todoist tasks',
+            details: error.message,
+            apiError: error.response?.data,
+        });
     }
 });
 

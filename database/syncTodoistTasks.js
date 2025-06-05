@@ -2,31 +2,36 @@ const Task = require('./taskSchema');
 const { fetchTodoistTasks } = require('../todoist-tasks/todoist-task-fetcher');
 
 const mapTodoistTaskToSchema = (todoistTask, existingTask) => {
+    // Handle different task formats (active vs completed)
+    const isCompletedFormat = !todoistTask.due && todoistTask.task_id;
+
+    // Map task ID correctly based on format
+    const taskId = isCompletedFormat ? todoistTask.task_id : todoistTask.id;
+
+    // Handle due date and time
     const dueDate = todoistTask.due ? new Date(todoistTask.due.datetime || todoistTask.due.date) : null;
     const dueTime = todoistTask.due?.datetime ? new Date(todoistTask.due.datetime).toLocaleTimeString() : '';
 
     // Handle completed_at logic
-    let completedAt = existingTask?.completed_at || null;
+    let completedAt = null;
     if (todoistTask.is_completed) {
-        if (!existingTask || !existingTask.is_completed) {
-            completedAt = new Date(); // Just completed, set current time
-        }
-    } else {
-        completedAt = null; // Still incomplete, ensure completed_at is null
+        // For tasks from the completed endpoint, use the task's ID as a timestamp
+        // This is because the completed tasks from sync API don't have completion dates
+        completedAt = isCompletedFormat ? new Date() : new Date(todoistTask.completed_at || Date.now());
     }
 
     return {
-        todoid: todoistTask.id,
+        todoid: taskId,
         content: todoistTask.content,
-        description: todoistTask.description,
-        is_completed: todoistTask.is_completed,
-        labels: todoistTask.labels,
-        priority: todoistTask.priority.toString(),
+        description: todoistTask.description || '',
+        is_completed: todoistTask.is_completed || false,
+        labels: todoistTask.labels || [],
+        priority: todoistTask.priority?.toString() || '4',
         due_date: dueDate,
         due_time: dueTime,
-        url: todoistTask.url,
-        project_id: todoistTask.project_id,
-        created_at: new Date(todoistTask.created_at),
+        url: todoistTask.url || '',
+        project_id: todoistTask.project_id || '',
+        created_at: todoistTask.created_at ? new Date(todoistTask.created_at) : new Date(),
         completed_at: completedAt,
         last_updated_by: 'todoist-sync',
         source: 'todoist',
@@ -37,14 +42,19 @@ const syncTodoistTasks = async () => {
     try {
         console.log('Starting Todoist task sync...');
         const todoistTasks = await fetchTodoistTasks();
-        console.log(`Fetched ${todoistTasks.length} tasks from Todoist`);
+        console.log(`Fetched ${todoistTasks.length} total tasks from Todoist`);
 
         const syncResults = await Promise.all(
             todoistTasks.map(async (todoistTask) => {
                 try {
-                    console.log(`Processing task: ${todoistTask.content} (ID: ${todoistTask.id})`);
-                    const existingTask = await Task.findOne({ todoid: todoistTask.id });
-                    console.log(`Task ${todoistTask.id} exists in DB: ${!!existingTask}`);
+                    const taskId = todoistTask.task_id || todoistTask.id;
+                    console.log(
+                        `Processing task: ${todoistTask.content} (ID: ${taskId}) [${
+                            todoistTask.is_completed ? 'Completed' : 'Active'
+                        }]`
+                    );
+                    const existingTask = await Task.findOne({ todoid: taskId });
+                    console.log(`Task ${taskId} exists in DB: ${!!existingTask}`);
 
                     const mappedTask = mapTodoistTaskToSchema(todoistTask, existingTask);
 
@@ -54,10 +64,10 @@ const syncTodoistTasks = async () => {
                         setDefaultsOnInsert: true,
                     });
                     console.log(`Successfully saved task: ${result.content} (ID: ${result.todoid})`);
-                    return { id: todoistTask.id, status: 'success' };
+                    return { id: taskId, status: 'success' };
                 } catch (err) {
-                    console.error(`Failed to sync task ${todoistTask.id}:`, err.message);
-                    return { id: todoistTask.id, status: 'failed', error: err.message };
+                    console.error(`Failed to sync task ${todoistTask.id || todoistTask.task_id}:`, err.message);
+                    return { id: todoistTask.id || todoistTask.task_id, status: 'failed', error: err.message };
                 }
             })
         );
@@ -72,13 +82,15 @@ const syncTodoistTasks = async () => {
 
         // Log final DB state
         const finalTaskCount = await Task.countDocuments();
-        console.log(`Total tasks in database after sync: ${finalTaskCount}`);
+        const completedCount = await Task.countDocuments({ is_completed: true });
+        console.log(`Total tasks in database after sync: ${finalTaskCount} (${completedCount} completed)`);
 
         return {
             total: todoistTasks.length,
             failed: failedTasks.length,
             success: todoistTasks.length - failedTasks.length,
             dbCount: finalTaskCount,
+            completedCount,
         };
     } catch (error) {
         console.error('Error syncing Todoist tasks:', error);

@@ -36,7 +36,12 @@ async function fetchTodoistTasks() {
             '-' +
             String(now.getSeconds()).padStart(2, '0');
         const fileName = `todoist-tasks-${timestamp}.json`;
-        const filePath = path.join(__dirname, fileName);
+        const logsDir = path.join(__dirname, '..', 'logs');
+
+        // Ensure logs directory exists
+        await fs.mkdir(logsDir, { recursive: true });
+
+        const filePath = path.join(logsDir, fileName);
 
         // Save tasks to file
         await fs.writeFile(filePath, JSON.stringify(tasks, null, 2));

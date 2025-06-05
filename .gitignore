@@ -30,8 +30,8 @@ pids
 .DS_Store
 Thumbs.db 
 
-# Todoist task files
+# Logs files
 *.json
 
-# randam
+# random files
 a.txt

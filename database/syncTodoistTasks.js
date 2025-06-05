@@ -37,18 +37,23 @@ const syncTodoistTasks = async () => {
     try {
         console.log('Starting Todoist task sync...');
         const todoistTasks = await fetchTodoistTasks();
+        console.log(`Fetched ${todoistTasks.length} tasks from Todoist`);
 
         const syncResults = await Promise.all(
             todoistTasks.map(async (todoistTask) => {
                 try {
+                    console.log(`Processing task: ${todoistTask.content} (ID: ${todoistTask.id})`);
                     const existingTask = await Task.findOne({ todoid: todoistTask.id });
+                    console.log(`Task ${todoistTask.id} exists in DB: ${!!existingTask}`);
+
                     const mappedTask = mapTodoistTaskToSchema(todoistTask, existingTask);
 
-                    await Task.findOneAndUpdate({ todoid: mappedTask.todoid }, mappedTask, {
+                    const result = await Task.findOneAndUpdate({ todoid: mappedTask.todoid }, mappedTask, {
                         upsert: true,
                         new: true,
                         setDefaultsOnInsert: true,
                     });
+                    console.log(`Successfully saved task: ${result.content} (ID: ${result.todoid})`);
                     return { id: todoistTask.id, status: 'success' };
                 } catch (err) {
                     console.error(`Failed to sync task ${todoistTask.id}:`, err.message);
@@ -60,14 +65,20 @@ const syncTodoistTasks = async () => {
         const failedTasks = syncResults.filter((result) => result.status === 'failed');
         if (failedTasks.length) {
             console.warn(`${failedTasks.length} tasks failed to sync.`);
+            console.warn('Failed tasks:', failedTasks);
         } else {
             console.log('All tasks synced successfully!');
         }
+
+        // Log final DB state
+        const finalTaskCount = await Task.countDocuments();
+        console.log(`Total tasks in database after sync: ${finalTaskCount}`);
 
         return {
             total: todoistTasks.length,
             failed: failedTasks.length,
             success: todoistTasks.length - failedTasks.length,
+            dbCount: finalTaskCount,
         };
     } catch (error) {
         console.error('Error syncing Todoist tasks:', error);

@@ -45,7 +45,31 @@ app.get('/tasks', async (req, res) => {
     }
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Start server with error handling
+const server = app
+    .listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    })
+    .on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error(
+                `Port ${PORT} is already in use. Please:\n` +
+                    '1. Stop any other running instances of this server\n' +
+                    '2. Choose a different port in your .env file\n' +
+                    '3. Or wait a few seconds and try again'
+            );
+            process.exit(1);
+        } else {
+            console.error('Server error:', err.message);
+            process.exit(1);
+        }
+    });
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM. Performing graceful shutdown...');
+    server.close(() => {
+        console.log('Server closed. Exiting process.');
+        process.exit(0);
+    });
 });

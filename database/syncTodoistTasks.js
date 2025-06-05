@@ -29,7 +29,11 @@ const mapTodoistTaskToSchema = (todoistTask, existingTask) => {
         priority: todoistTask.priority?.toString() || '4',
         due_date: dueDate,
         due_time: dueTime,
-        url: todoistTask.url || '',
+        url:
+            todoistTask.url ??
+            (todoistTask.id || todoistTask.task_id
+                ? `https://app.todoist.com/app/task/${todoistTask.id || todoistTask.task_id}`
+                : null),
         project_id: todoistTask.project_id || '',
         created_at: todoistTask.created_at ? new Date(todoistTask.created_at) : new Date(),
         completed_at: completedAt,

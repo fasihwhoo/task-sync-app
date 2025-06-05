@@ -221,14 +221,64 @@ npm run dev
 npm start
 ```
 
-## Future Enhancements
+## Recent Updates and Improvements
 
--   [ ] Task deletion sync
--   [ ] Two-way sync (MongoDB to Todoist)
--   [ ] Project synchronization
--   [ ] Label management
--   [ ] Task comments sync
--   [ ] Webhook support for real-time updates
+### Code Documentation (Latest Update)
+
+We've added comprehensive documentation throughout the codebase to improve maintainability and developer experience:
+
+#### Server (`server.js`)
+
+-   Added detailed JSDoc comments for all API endpoints
+-   Documented environment variable requirements
+-   Added error handling documentation
+-   Improved server initialization and shutdown comments
+
+#### Task Fetcher (`todoist-tasks/todoist-task-fetcher.js`)
+
+-   Documented Todoist API integration methods
+-   Added detailed function documentation for active and completed task fetching
+-   Improved error handling and logging documentation
+-   Added file saving and timestamp handling explanations
+
+#### Database Layer
+
+1. Configuration (`database/config.js`):
+
+    - Added MongoDB connection configuration documentation
+    - Documented environment variables and default settings
+    - Added error handling and retry logic documentation
+
+2. Task Schema (`database/taskSchema.js`):
+
+    - Added comprehensive JSDoc type definitions
+    - Documented all task properties and their purposes
+    - Added schema options and middleware documentation
+    - Improved field validation documentation
+
+3. Task Synchronization (`database/syncTodoistTasks.js`):
+    - Added detailed sync process documentation
+    - Documented statistics tracking and error handling
+    - Added task mapping and update logic documentation
+    - Improved logging and debugging information
+
+### Code Structure Improvements
+
+-   Organized code into logical modules
+-   Improved error handling across all components
+-   Added consistent logging patterns
+-   Implemented proper type checking and validation
+-   Added graceful shutdown handling
+-   Improved API response formatting
+
+### Future Enhancements
+
+-   [ ] Add API rate limiting
+-   [ ] Implement caching layer
+-   [ ] Add task update webhooks
+-   [ ] Improve error recovery mechanisms
+-   [ ] Add automated tests
+-   [ ] Add performance monitoring
 
 ## Contributing
 

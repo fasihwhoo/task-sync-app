@@ -1,3 +1,11 @@
+// Main server file for the Todoist-MongoDB Sync application
+// This file sets up the Express server and defines the API endpoints
+//
+// Environment variables required:
+// - PORT: The port number for the server (default: 3000)
+// - MONGODB_URI: MongoDB connection string
+// - TODOIST_API_TOKEN: Todoist API authentication token
+
 require('dotenv').config();
 const express = require('express');
 const connectDB = require('./database/config');
@@ -5,6 +13,7 @@ const syncTodoistTasks = require('./database/syncTodoistTasks');
 const Task = require('./database/taskSchema');
 // const { fetchTodoistTasks } = require('./todoist-tasks/todoist-task-fetcher');
 
+// Initialize Express application
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -14,14 +23,29 @@ connectDB();
 // Middleware
 app.use(express.json());
 
-// Basic route
+// Root endpoint
+// Provides basic server status and navigation information
+//
+// @route GET /
+// @returns {string} HTML response with server status and available endpoints
 app.get('/', (req, res) => {
     res.send(
         'Server is running! Go to /tasks to fetch tasks.' + ` visit http://localhost:${PORT}/tasks to fetch tasks.`
     );
 });
 
-// Todoist tasks routes
+// Task Synchronization Endpoint
+// Triggers a sync operation between Todoist and MongoDB
+//
+// @route GET /tasks/sync
+// @returns {Object} JSON object containing sync results
+// @returns {string} message - Success or failure message
+// @returns {Object} stats - Synchronization statistics
+//   @returns {number} stats.total - Total number of tasks processed
+//   @returns {number} stats.failed - Number of failed task syncs
+//   @returns {number} stats.success - Number of successful task syncs
+//   @returns {number} stats.dbCount - Total tasks in database
+//   @returns {number} stats.completedCount - Number of completed tasks
 app.get('/tasks/sync', async (req, res) => {
     try {
         console.log('Starting task sync...');
@@ -46,11 +70,14 @@ app.get('/tasks/sync', async (req, res) => {
     }
 });
 
-// Get all tasks from database
+// Task Retrieval Endpoint
+// Gets all tasks from the MongoDB database
+//
+// @route GET /tasks
+// @returns {Array} Array of task objects from the database
+// @throws {500} If database query fails
 app.get('/tasks', async (req, res) => {
     try {
-        // const tasks = await fetchTodoistTasks();
-        // console.log('Fetched Todoist Tasks:', JSON.stringify(tasks, null, 2));
         const tasksFromDb = await Task.find({});
         res.json(tasksFromDb);
     } catch (error) {
@@ -59,7 +86,8 @@ app.get('/tasks', async (req, res) => {
     }
 });
 
-// Start server with error handling
+// Server initialization with error handling
+// Includes graceful shutdown and port conflict resolution
 const server = app
     .listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
@@ -79,7 +107,9 @@ const server = app
         }
     });
 
-// Handle graceful shutdown
+// Graceful Shutdown Handler
+// Ensures clean server shutdown on SIGTERM signal
+// Important for container environments and process managers
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM. Performing graceful shutdown...');
     server.close(() => {

@@ -9,9 +9,7 @@
 require('dotenv').config();
 const express = require('express');
 const connectDB = require('./database/config');
-const syncTodoistTasks = require('./database/syncTodoistTasks');
-const Task = require('./database/taskSchema');
-// const { fetchTodoistTasks } = require('./todoist-tasks/todoist-task-fetcher');
+const taskRoutes = require('./routes/taskRoutes');
 
 // Initialize Express application
 const app = express();
@@ -29,62 +27,11 @@ app.use(express.json());
 // @route GET /
 // @returns {string} HTML response with server status and available endpoints
 app.get('/', (req, res) => {
-    res.send(
-        'Server is running! Go to /tasks to fetch tasks.' + ` visit http://localhost:${PORT}/tasks to fetch tasks.`
-    );
+    res.send('Server is running! Go to /tasks to fetch tasks.');
 });
 
-// Task Synchronization Endpoint
-// Triggers a sync operation between Todoist and MongoDB
-//
-// @route GET /tasks/sync
-// @returns {Object} JSON object containing sync results
-// @returns {string} message - Success or failure message
-// @returns {Object} stats - Synchronization statistics
-//   @returns {number} stats.total - Total number of tasks processed
-//   @returns {number} stats.failed - Number of failed task syncs
-//   @returns {number} stats.success - Number of successful task syncs
-//   @returns {number} stats.dbCount - Total tasks in database
-//   @returns {number} stats.completedCount - Number of completed tasks
-app.get('/tasks/sync', async (req, res) => {
-    try {
-        console.log('Starting task sync...');
-        const syncedCount = await syncTodoistTasks();
-        console.log('Sync completed:', syncedCount);
-        res.json({
-            message: `Successfully synced tasks from Todoist`,
-            stats: syncedCount,
-        });
-    } catch (error) {
-        console.error('Error in sync endpoint:', error);
-        console.error('Error details:', {
-            message: error.message,
-            response: error.response?.data,
-            stack: error.stack,
-        });
-        res.status(500).json({
-            error: 'Failed to sync Todoist tasks',
-            details: error.message,
-            apiError: error.response?.data,
-        });
-    }
-});
-
-// Task Retrieval Endpoint
-// Gets all tasks from the MongoDB database
-//
-// @route GET /tasks
-// @returns {Array} Array of task objects from the database
-// @throws {500} If database query fails
-app.get('/tasks', async (req, res) => {
-    try {
-        const tasksFromDb = await Task.find({});
-        res.json(tasksFromDb);
-    } catch (error) {
-        console.error('Error:', error.message);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
+// Mount task routes
+app.use('/tasks', taskRoutes);
 
 // Server initialization with error handling
 // Includes graceful shutdown and port conflict resolution

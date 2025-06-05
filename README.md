@@ -10,6 +10,7 @@ A Node.js application that synchronizes tasks between Todoist and MongoDB, provi
 -   Automatic task synchronization
 -   Detailed logging system
 -   Real-time task updates
+-   Separate endpoints for active and completed tasks
 
 ## Tech Stack
 
@@ -51,7 +52,55 @@ PORT=8082
 
 ## API Endpoints
 
-### Task Synchronization
+### Task Management
+
+-   **GET** `/tasks`
+
+    -   Retrieves all tasks directly from Todoist
+    -   Returns array of task objects in Todoist format
+
+-   **GET** `/tasks/active`
+
+    -   Retrieves only active (uncompleted) tasks from Todoist
+    -   Returns array of active task objects
+
+    ```json
+    [
+        {
+            "id": "1234567890",
+            "content": "Task title",
+            "description": "",
+            "is_completed": false,
+            "priority": 4,
+            "due": {
+                "date": "2024-03-15",
+                "string": "Mar 15",
+                "lang": "en"
+            }
+        }
+    ]
+    ```
+
+-   **GET** `/tasks/completed`
+    -   Retrieves only completed tasks from Todoist
+    -   Returns array of completed task objects
+    ```json
+    [
+        {
+            "id": "0987654321",
+            "content": "Completed task",
+            "is_completed": true,
+            "completed_at": "2024-03-10T15:30:00Z"
+        }
+    ]
+    ```
+
+### Database Operations
+
+-   **GET** `/tasks/db`
+
+    -   Retrieves all tasks from MongoDB database
+    -   Returns array of task objects in database format
 
 -   **GET** `/tasks/sync`
     -   Syncs tasks between Todoist and MongoDB
@@ -68,12 +117,6 @@ PORT=8082
         }
     }
     ```
-
-### Task Management
-
--   **GET** `/tasks`
-    -   Retrieves all tasks from the database
-    -   Returns array of task objects
 
 ## Data Models
 
@@ -144,6 +187,27 @@ PORT=8082
 }
 ```
 
+## Project Structure
+
+```
+notion-todoist-sync/
+├── routes/
+│   └── taskRoutes.js    # All task-related route handlers
+├── database/
+│   ├── config.js        # MongoDB connection
+│   ├── syncTodoistTasks.js # Sync logic
+│   └── taskSchema.js    # Mongoose schema
+├── todoist-tasks/
+│   └── todoist-task-fetcher.js # Todoist API integration
+├── logs/                # Task sync logs
+├── .env                # Environment variables
+├── .gitignore
+├── nodemon.json       # Nodemon config
+├── package.json
+├── package-lock.json
+└── server.js          # Express server setup
+```
+
 ## Sync Logic
 
 ### Active Tasks
@@ -157,7 +221,7 @@ PORT=8082
 -   Fetches completed tasks from Todoist Sync API v9
 -   Endpoint: `https://api.todoist.com/sync/v9/completed/get_all`
 -   Parameters:
-    -   `since`: Last 7 days (YYYY-MM-DD format)
+    -   `since`: Last 30 days (YYYY-MM-DD format)
     -   `limit`: 200 (maximum allowed)
 
 ### Task Processing
@@ -167,25 +231,6 @@ PORT=8082
 3. Handles different task formats (active vs completed)
 4. Updates or creates tasks in MongoDB
 5. Maintains task completion status and timestamps
-
-## File Structure
-
-```
-notion-todoist-sync/
-├── database/
-│   ├── config.js         # MongoDB connection
-│   ├── syncTodoistTasks.js # Sync logic
-│   └── taskSchema.js     # Mongoose schema
-├── todoist-tasks/
-│   └── todoist-task-fetcher.js # Todoist API integration
-├── logs/                 # Task sync logs
-├── .env                 # Environment variables
-├── .gitignore
-├── nodemon.json        # Nodemon config
-├── package.json
-├── package-lock.json
-└── server.js           # Express server
-```
 
 ## Error Handling
 
@@ -223,53 +268,13 @@ npm start
 
 ## Recent Updates and Improvements
 
-### Code Documentation (Latest Update)
+### Code Organization (Latest Update)
 
-We've added comprehensive documentation throughout the codebase to improve maintainability and developer experience:
-
-#### Server (`server.js`)
-
--   Added detailed JSDoc comments for all API endpoints
--   Documented environment variable requirements
--   Added error handling documentation
--   Improved server initialization and shutdown comments
-
-#### Task Fetcher (`todoist-tasks/todoist-task-fetcher.js`)
-
--   Documented Todoist API integration methods
--   Added detailed function documentation for active and completed task fetching
--   Improved error handling and logging documentation
--   Added file saving and timestamp handling explanations
-
-#### Database Layer
-
-1. Configuration (`database/config.js`):
-
-    - Added MongoDB connection configuration documentation
-    - Documented environment variables and default settings
-    - Added error handling and retry logic documentation
-
-2. Task Schema (`database/taskSchema.js`):
-
-    - Added comprehensive JSDoc type definitions
-    - Documented all task properties and their purposes
-    - Added schema options and middleware documentation
-    - Improved field validation documentation
-
-3. Task Synchronization (`database/syncTodoistTasks.js`):
-    - Added detailed sync process documentation
-    - Documented statistics tracking and error handling
-    - Added task mapping and update logic documentation
-    - Improved logging and debugging information
-
-### Code Structure Improvements
-
--   Organized code into logical modules
--   Improved error handling across all components
--   Added consistent logging patterns
--   Implemented proper type checking and validation
--   Added graceful shutdown handling
--   Improved API response formatting
+-   Moved all route handlers to dedicated `routes` directory
+-   Separated task-related routes into `taskRoutes.js`
+-   Added new endpoints for active and completed tasks
+-   Improved code modularity and maintainability
+-   Enhanced API documentation
 
 ### Future Enhancements
 

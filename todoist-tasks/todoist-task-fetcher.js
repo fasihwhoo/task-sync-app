@@ -30,13 +30,15 @@ if (!TODOIST_API_TOKEN) {
 // @throws {Error} If API request fails
 async function fetchActiveTasks() {
     try {
-        const response = await axios.get('https://api.todoist.com/rest/v2/tasks', {
+        const ActiveTasksResponse = await axios.get('https://api.todoist.com/rest/v2/tasks', {
             headers: {
                 Authorization: `Bearer ${TODOIST_API_TOKEN}`,
             },
         });
-        console.log('Successfully fetched active tasks');
-        return response.data;
+        console.log('Successfully fetched Active tasks');
+        const activeTasksItems = ActiveTasksResponse.data || [];
+        console.log(`Found ${activeTasksItems.length} ACtive tasks`);
+        return ActiveTasksResponse.data;
     } catch (error) {
         console.error('Error fetching active tasks:', error.response?.data || error.message);
         throw error;
@@ -54,13 +56,11 @@ async function fetchCompletedTasks() {
     try {
         // Get completed tasks from the last 7 days (Todoist API limit)
         const now = new Date();
-        const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+        const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 7 days ago
         const sinceStr = since.toISOString().slice(0, 10); // Format: YYYY-MM-DD
 
-        console.log('Fetching completed tasks since:', sinceStr);
-
         // First get all completed task IDs
-        const completedResponse = await axios.get('https://api.todoist.com/sync/v9/completed/get_all', {
+        const completedTasksResponse = await axios.get('https://api.todoist.com/sync/v9/completed/get_all', {
             headers: {
                 Authorization: `Bearer ${TODOIST_API_TOKEN}`,
             },
@@ -69,12 +69,13 @@ async function fetchCompletedTasks() {
                 limit: 200, // Maximum allowed by API
             },
         });
+        console.log('Successfully fetched Completed tasks since:', sinceStr);
 
-        const completedItems = completedResponse.data.items || [];
-        console.log(`Found ${completedItems.length} completed tasks`);
+        const completedTasksItems = completedTasksResponse.data.items || [];
+        console.log(`Found ${completedTasksItems.length} completed tasks`);
 
         // Then get full task details for each completed task
-        const completedTasksWithDetails = completedItems.map((item) => ({
+        const completedTasksWithDetails = completedTasksItems.map((item) => ({
             ...item,
             is_completed: true,
             completed_at: item.completed_date,
@@ -105,7 +106,7 @@ async function fetchCompletedTasks() {
 async function fetchTodoistTasks() {
     try {
         // Fetch both active and completed tasks
-        console.log('Starting to fetch all tasks...');
+        console.log('Started fetching Active and Completed tasks...');
         const [activeTasks, completedTasks] = await Promise.all([fetchActiveTasks(), fetchCompletedTasks()]);
 
         console.log(`Fetched ${activeTasks.length} active tasks and ${completedTasks.length} completed tasks`);
@@ -146,6 +147,8 @@ async function fetchTodoistTasks() {
 // Export the main function for use in other modules
 module.exports = {
     fetchTodoistTasks,
+    fetchActiveTasks,
+    fetchCompletedTasks,
 };
 
 // Allow direct execution for testing

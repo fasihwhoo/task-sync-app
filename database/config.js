@@ -20,10 +20,7 @@ const defaultUri = 'mongodb://localhost:27017/todoist-sync';
 const connectDB = async () => {
     try {
         const uri = process.env.MONGODB_URI || defaultUri;
-        await mongoose.connect(uri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose.connect(uri || defaultUri);
         console.log('MongoDB Connected Successfully');
     } catch (error) {
         console.error('MongoDB connection error:', error.message);

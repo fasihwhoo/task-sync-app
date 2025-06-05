@@ -1,20 +1,9 @@
-// Todoist Task Synchronization Module
-// Handles the synchronization of tasks between Todoist API and MongoDB
-//
-// This module:
-// 1. Fetches tasks from Todoist API
-// 2. Updates or creates tasks in MongoDB
-// 3. Tracks sync statistics and handles errors
-// 4. Maintains task completion status
+// Todoist Task Sync - Handles task synchronization between Todoist and MongoDB
 
-const { fetchTodoistTasks } = require('../todoist-tasks/todoist-task-fetcher');
+const { fetchTodoistTasks } = require('../todoist/todoist-task-fetcher');
 const Task = require('./taskSchema');
 
-// Maps a Todoist task to our MongoDB schema format
-// Handles different task formats (active vs completed)
-//
-// @param {Object} todoistTask - Task data from Todoist API
-// @returns {Object} Mapped task data matching our schema
+// Map Todoist task to MongoDB schema format
 const mapTodoistTaskToSchema = (todoistTask) => {
     // Handle different task formats (active vs completed)
     const isCompletedFormat = !todoistTask.due && todoistTask.task_id;
@@ -29,7 +18,6 @@ const mapTodoistTaskToSchema = (todoistTask) => {
     // Handle completed_at logic
     let completedAt = null;
     if (todoistTask.is_completed) {
-        // For tasks from the completed endpoint, use the task's completion date
         completedAt = isCompletedFormat ? new Date() : new Date(todoistTask.completed_at || Date.now());
     }
 
@@ -51,13 +39,7 @@ const mapTodoistTaskToSchema = (todoistTask) => {
     };
 };
 
-// Synchronizes tasks between Todoist and MongoDB
-// Handles both active and completed tasks
-//
-// @async
-// @function syncTodoistTasks
-// @returns {Promise<Object>} Sync statistics including success/failure counts
-// @throws {Error} If sync operation fails critically
+// Sync tasks between Todoist and MongoDB
 async function syncTodoistTasks() {
     try {
         console.log('Starting Todoist task sync...');

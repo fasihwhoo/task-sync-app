@@ -1,13 +1,5 @@
-// Todoist Task Fetcher Module
-// Handles all interactions with the Todoist API for fetching tasks
-//
-// This module provides functionality to:
-// - Fetch active tasks from Todoist REST API v2
-// - Fetch completed tasks from Todoist Sync API v9
-// - Save task data to JSON log files
-//
-// Environment variables required:
-// - TODOIST_API_TOKEN: Your Todoist API token
+// Todoist Task Fetcher - Handles all Todoist API interactions
+// Requires env var: TODOIST_API_TOKEN
 
 require('dotenv').config();
 const axios = require('axios');
@@ -22,12 +14,7 @@ if (!TODOIST_API_TOKEN) {
     process.exit(1);
 }
 
-// Fetches active (uncompleted) tasks from Todoist
-//
-// @async
-// @function fetchActiveTasks
-// @returns {Promise<Array>} Array of active task objects
-// @throws {Error} If API request fails
+// Fetch active (uncompleted) tasks from Todoist
 async function fetchActiveTasks() {
     try {
         const ActiveTasksResponse = await axios.get('https://api.todoist.com/rest/v2/tasks', {
@@ -45,13 +32,7 @@ async function fetchActiveTasks() {
     }
 }
 
-// Fetches completed tasks from Todoist
-// Uses the Sync API to get tasks completed in the last 30 days
-//
-// @async
-// @function fetchCompletedTasks
-// @returns {Promise<Array>} Array of completed task objects
-// @throws {Error} If API request fails
+// Fetch completed tasks from last 30 days
 async function fetchCompletedTasks() {
     try {
         // Get completed tasks from the last 30 days
@@ -95,14 +76,7 @@ async function fetchCompletedTasks() {
     }
 }
 
-// Main function to fetch all tasks from Todoist
-// Combines both active and completed tasks
-// Saves tasks to a timestamped JSON file in the logs directory
-//
-// @async
-// @function fetchTodoistTasks
-// @returns {Promise<Array>} Combined array of active and completed tasks
-// @throws {Error} If fetching or saving tasks fails
+// Fetch all tasks from Todoist and save to logs
 async function fetchTodoistTasks() {
     try {
         // Fetch both active and completed tasks
@@ -114,7 +88,7 @@ async function fetchTodoistTasks() {
         // Combine tasks and ensure completed tasks are marked
         const allTasks = [...activeTasks, ...completedTasks];
 
-        // Create timestamp for the filename using real current date
+        // Create timestamp for the filename
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '--').slice(0, 19);
 
@@ -126,7 +100,7 @@ async function fetchTodoistTasks() {
 
         const filePath = path.join(logsDir, fileName);
 
-        // Save tasks to file for logging and debugging
+        // Save tasks to file for logging
         await fs.writeFile(filePath, JSON.stringify(allTasks, null, 2));
         console.log(`Tasks saved to ${filePath}`);
 
@@ -144,7 +118,7 @@ async function fetchTodoistTasks() {
     }
 }
 
-// Export the main function for use in other modules
+// Export functions
 module.exports = {
     fetchTodoistTasks,
     fetchActiveTasks,

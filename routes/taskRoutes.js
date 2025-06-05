@@ -1,25 +1,12 @@
-// Task Routes Module
-// Contains all task-related route handlers
-//
-// This module provides endpoints for:
-// - Fetching all tasks
-// - Fetching active tasks
-// - Fetching completed tasks
-// - Syncing tasks with MongoDB
-// - Fetching tasks from MongoDB
+// Task Routes Module - Handles all task-related endpoints
 
 const express = require('express');
 const router = express.Router();
-const { fetchTodoistTasks, fetchActiveTasks, fetchCompletedTasks } = require('../todoist-tasks/todoist-task-fetcher');
+const { fetchTodoistTasks, fetchActiveTasks, fetchCompletedTasks } = require('../todoist/todoist-task-fetcher');
 const syncTodoistTasks = require('../database/syncTodoistTasks');
 const Task = require('../database/taskSchema');
 
-// Direct Task Fetch Endpoint
-// Gets all tasks directly from Todoist API (both active and completed)
-//
-// @route GET /tasks
-// @returns {Array} Array of task objects from Todoist
-// @throws {500} If Todoist API request fails
+// GET /tasks - Get all tasks from Todoist
 router.get('/', async (req, res) => {
     try {
         console.log('Starting Fetching All tasks from Todoist...');
@@ -35,12 +22,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Active Tasks Fetch Endpoint
-// Gets only active (uncompleted) tasks from Todoist API
-//
-// @route GET /tasks/active
-// @returns {Array} Array of active task objects from Todoist
-// @throws {500} If Todoist API request fails
+// GET /tasks/active - Get only active tasks from Todoist
 router.get('/active', async (req, res) => {
     try {
         console.log('Starting to fetch active tasks from Todoist...');
@@ -57,12 +39,7 @@ router.get('/active', async (req, res) => {
     }
 });
 
-// Completed Tasks Fetch Endpoint
-// Gets only completed tasks from Todoist API
-//
-// @route GET /tasks/completed
-// @returns {Array} Array of completed task objects from Todoist
-// @throws {500} If Todoist API request fails
+// GET /tasks/completed - Get only completed tasks from Todoist
 router.get('/completed', async (req, res) => {
     try {
         console.log('Starting to fetch completed tasks from Todoist...');
@@ -79,18 +56,7 @@ router.get('/completed', async (req, res) => {
     }
 });
 
-// Task Synchronization Endpoint
-// Triggers a sync operation between Todoist and MongoDB
-//
-// @route GET /tasks/sync
-// @returns {Object} JSON object containing sync results
-// @returns {string} message - Success or failure message
-// @returns {Object} stats - Synchronization statistics
-//   @returns {number} stats.total - Total number of tasks processed
-//   @returns {number} stats.failed - Number of failed task syncs
-//   @returns {number} stats.success - Number of successful task syncs
-//   @returns {number} stats.dbCount - Total tasks in database
-//   @returns {number} stats.completedCount - Number of completed tasks
+// GET /tasks/sync - Sync tasks between Todoist and MongoDB
 router.get('/sync', async (req, res) => {
     try {
         console.log('Starting task sync...');
@@ -115,12 +81,7 @@ router.get('/sync', async (req, res) => {
     }
 });
 
-// Task Retrieval Endpoint
-// Gets all tasks from the MongoDB database
-//
-// @route GET /tasks/db
-// @returns {Array} Array of task objects from the database
-// @throws {500} If database query fails
+// GET /tasks/db - Get all tasks from MongoDB
 router.get('/db', async (req, res) => {
     try {
         console.log('Fetching tasks from MongoDB...');

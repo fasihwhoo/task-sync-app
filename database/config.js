@@ -1,22 +1,12 @@
-// MongoDB Configuration Module
-// Handles the connection to MongoDB database
-//
-// Environment variables required:
-// - MONGODB_URI: MongoDB connection string (default: mongodb://localhost:27017/todoist-sync)
+// MongoDB Config - Handles database connection
+// Requires env var: MONGODB_URI (default: mongodb://localhost:27017/todoist-sync)
 
 const mongoose = require('mongoose');
 
-// Default MongoDB connection string for local development
+// Default MongoDB connection string
 const defaultUri = 'mongodb://localhost:27017/todoist-sync';
 
-// Establishes connection to MongoDB
-// Uses environment variable or falls back to default local connection
-// Implements retry logic and error handling
-//
-// @async
-// @function connectDB
-// @returns {Promise<void>}
-// @throws {Error} If connection fails after retries
+// Connect to MongoDB with error handling
 const connectDB = async () => {
     try {
         const uri = process.env.MONGODB_URI || defaultUri;

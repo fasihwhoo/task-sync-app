@@ -1,17 +1,12 @@
-// Main server file for the Todoist-MongoDB Sync application
-// This file sets up the Express server and defines the API endpoints
-//
-// Environment variables required:
-// - PORT: The port number for the server (default: 3000)
-// - MONGODB_URI: MongoDB connection string
-// - TODOIST_API_TOKEN: Todoist API authentication token
+// Main server file for Todoist-MongoDB sync app
+// Required env vars: PORT, MONGODB_URI, TODOIST_API_TOKEN
 
 require('dotenv').config();
 const express = require('express');
 const connectDB = require('./database/config');
 const taskRoutes = require('./routes/taskRoutes');
 
-// Initialize Express application
+// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -21,11 +16,7 @@ connectDB();
 // Middleware
 app.use(express.json());
 
-// Root endpoint
-// Provides basic server status and navigation information
-//
-// @route GET /
-// @returns {string} HTML response with server status and available endpoints
+// Root endpoint - Shows server status
 app.get('/', (req, res) => {
     res.send('Server is running! Go to /tasks to fetch tasks.');
 });
@@ -33,8 +24,7 @@ app.get('/', (req, res) => {
 // Mount task routes
 app.use('/tasks', taskRoutes);
 
-// Server initialization with error handling
-// Includes graceful shutdown and port conflict resolution
+// Start server with error handling
 const server = app
     .listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
@@ -54,9 +44,7 @@ const server = app
         }
     });
 
-// Graceful Shutdown Handler
-// Ensures clean server shutdown on SIGTERM signal
-// Important for container environments and process managers
+// Handle graceful shutdown
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM. Performing graceful shutdown...');
     server.close(() => {

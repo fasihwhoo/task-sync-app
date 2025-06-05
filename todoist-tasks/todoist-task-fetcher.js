@@ -46,7 +46,7 @@ async function fetchActiveTasks() {
 }
 
 // Fetches completed tasks from Todoist
-// Uses the Sync API to get tasks completed in the last 7 days
+// Uses the Sync API to get tasks completed in the last 30 days
 //
 // @async
 // @function fetchCompletedTasks
@@ -54,9 +54,9 @@ async function fetchActiveTasks() {
 // @throws {Error} If API request fails
 async function fetchCompletedTasks() {
     try {
-        // Get completed tasks from the last 7 days (Todoist API limit)
+        // Get completed tasks from the last 30 days
         const now = new Date();
-        const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 7 days ago
+        const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
         const sinceStr = since.toISOString().slice(0, 10); // Format: YYYY-MM-DD
 
         // First get all completed task IDs

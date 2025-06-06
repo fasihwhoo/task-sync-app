@@ -29,16 +29,10 @@ const taskSchema = new mongoose.Schema(
             default: [],
         },
         priority: {
-            type: String,
-            enum: ['1', '2', '3', '4'],
-            default: '4',
+            type: Number,
+            enum: [1, 2, 3, 4],
+            default: 4,
             index: true,
-            validate: {
-                validator: function (v) {
-                    return ['1', '2', '3', '4'].includes(v);
-                },
-                message: (props) => `${props.value} is not a valid priority! Must be '1', '2', '3', or '4'`,
-            },
         },
         due_date: {
             type: Date,
@@ -60,11 +54,13 @@ const taskSchema = new mongoose.Schema(
         },
         created_at: {
             type: Date,
-            default: Date.now,
+            required: true,
+            index: true,
         },
         updated_at: {
             type: Date,
-            default: Date.now,
+            required: true,
+            index: true,
         },
         completed_at: {
             type: Date,
@@ -81,7 +77,9 @@ const taskSchema = new mongoose.Schema(
             required: true,
         },
     },
-    { timestamps: true }
+    {
+        timestamps: false, // Disable mongoose automatic timestamps
+    }
 );
 
 // Pre-save middleware - Set created_at if not provided

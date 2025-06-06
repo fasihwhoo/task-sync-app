@@ -1,95 +1,92 @@
-// Task Routes Module - Handles all task-related endpoints
+// Task Routes - Handles all task-related endpoints
 
 const express = require('express');
 const router = express.Router();
-const { fetchTodoistTasks, fetchActiveTasks, fetchCompletedTasks } = require('../todoist/todoist-task-fetcher');
-const syncTodoistTasks = require('../database/syncTodoistTasks');
 const Task = require('../database/taskSchema');
+const syncTasks = require('../database/syncTasks');
+const { checkSyncStatus } = require('../database/syncChecker');
 
-// GET /tasks - Get all tasks from Todoist
+// GET /tasks - Show API status
 router.get('/', async (req, res) => {
-    try {
-        console.log('Starting Fetching All tasks from Todoist...');
-        const tasks = await fetchTodoistTasks();
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({
-            error: 'Failed to fetch tasks from Todoist',
-            details: error.message,
-            apiError: error.response?.data,
-        });
-    }
-});
-
-// GET /tasks/active - Get only active tasks from Todoist
-router.get('/active', async (req, res) => {
-    try {
-        console.log('Starting to fetch active tasks from Todoist...');
-        const activeTasks = await fetchActiveTasks();
-        console.log(`Successfully fetched ${activeTasks.length} active tasks`);
-        res.json(activeTasks);
-    } catch (error) {
-        console.error('Error fetching active tasks:', error);
-        res.status(500).json({
-            error: 'Failed to fetch active tasks from Todoist',
-            details: error.message,
-            apiError: error.response?.data,
-        });
-    }
-});
-
-// GET /tasks/completed - Get only completed tasks from Todoist
-router.get('/completed', async (req, res) => {
-    try {
-        console.log('Starting to fetch completed tasks from Todoist...');
-        const completedTasks = await fetchCompletedTasks();
-        console.log(`Successfully fetched ${completedTasks.length} completed tasks`);
-        res.json(completedTasks);
-    } catch (error) {
-        console.error('Error fetching completed tasks:', error);
-        res.status(500).json({
-            error: 'Failed to fetch completed tasks from Todoist',
-            details: error.message,
-            apiError: error.response?.data,
-        });
-    }
-});
-
-// GET /tasks/sync - Sync tasks between Todoist and MongoDB
-router.get('/sync', async (req, res) => {
-    try {
-        console.log('Starting task sync...');
-        const syncedCount = await syncTodoistTasks();
-        console.log('Sync completed:', syncedCount);
-        res.json({
-            message: `Successfully synced tasks from Todoist`,
-            stats: syncedCount,
-        });
-    } catch (error) {
-        console.error('Error in sync endpoint:', error);
-        console.error('Error details:', {
-            message: error.message,
-            response: error.response?.data,
-            stack: error.stack,
-        });
-        res.status(500).json({
-            error: 'Failed to sync Todoist tasks',
-            details: error.message,
-            apiError: error.response?.data,
-        });
-    }
+    res.json({
+        status: 'success',
+        message: 'Task sync API is running',
+        endpoints: {
+            'GET /tasks/db': 'Get all tasks from database',
+            'GET /tasks/active': 'Get active tasks',
+            'GET /tasks/completed': 'Get completed tasks',
+            'GET /tasks/sync/check': 'Check what needs to be synced',
+            'POST /tasks/sync': 'Perform task synchronization',
+        },
+    });
 });
 
 // GET /tasks/db - Get all tasks from MongoDB
 router.get('/db', async (req, res) => {
     try {
-        console.log('Fetching tasks from MongoDB...');
-        const tasksFromDb = await Task.find({});
-        res.json(tasksFromDb);
+        const tasks = await Task.find({});
+        res.json(tasks);
     } catch (error) {
-        console.error('Error:', error.message);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
+        console.error('Error fetching tasks:', error);
+        res.status(500).json({ error: 'Error fetching tasks' });
+    }
+});
+
+// GET /tasks/sync/check - Check what needs to be synced
+router.get('/sync/check', async (req, res) => {
+    try {
+        const syncStatus = await checkSyncStatus();
+        res.json({
+            status: 'success',
+            ...syncStatus,
+        });
+    } catch (error) {
+        console.error('Error checking sync status:', error);
+        res.status(500).json({
+            status: 'error',
+            error: 'Error checking sync status',
+            details: error.message,
+        });
+    }
+});
+
+// POST /tasks/sync - Sync tasks with Todoist
+router.post('/sync', async (req, res) => {
+    try {
+        const result = await syncTasks();
+        res.json({
+            status: 'success',
+            ...result,
+        });
+    } catch (error) {
+        console.error('Error syncing tasks:', error);
+        res.status(500).json({
+            status: 'error',
+            error: 'Error syncing tasks',
+            details: error.message,
+        });
+    }
+});
+
+// GET /tasks/completed - Get completed tasks
+router.get('/completed', async (req, res) => {
+    try {
+        const tasks = await Task.find({ is_completed: true });
+        res.json(tasks);
+    } catch (error) {
+        console.error('Error fetching completed tasks:', error);
+        res.status(500).json({ error: 'Error fetching completed tasks' });
+    }
+});
+
+// GET /tasks/active - Get active (not completed) tasks
+router.get('/active', async (req, res) => {
+    try {
+        const tasks = await Task.find({ is_completed: false });
+        res.json(tasks);
+    } catch (error) {
+        console.error('Error fetching active tasks:', error);
+        res.status(500).json({ error: 'Error fetching active tasks' });
     }
 });
 

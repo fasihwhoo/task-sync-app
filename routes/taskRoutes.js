@@ -15,8 +15,8 @@ router.get('/', async (req, res) => {
             'GET /tasks/db': 'Get all tasks from database',
             'GET /tasks/active': 'Get active tasks',
             'GET /tasks/completed': 'Get completed tasks',
-            'GET /tasks/sync/check': 'Check what needs to be synced',
-            'POST /tasks/sync': 'Perform task synchronization',
+            'GET /tasks/sync/check': 'Check what needs to be synced from Todoist to MongoDB',
+            'POST /tasks/sync': 'Import/sync tasks from Todoist to MongoDB (one-way sync)',
         },
     });
 });
@@ -50,19 +50,20 @@ router.get('/sync/check', async (req, res) => {
     }
 });
 
-// POST /tasks/sync - Sync tasks with Todoist
+// POST /tasks/sync - Import tasks from Todoist to MongoDB (one-way sync)
 router.post('/sync', async (req, res) => {
     try {
         const result = await syncTasks();
         res.json({
             status: 'success',
+            message: 'Successfully imported tasks from Todoist to MongoDB',
             ...result,
         });
     } catch (error) {
-        console.error('Error syncing tasks:', error);
+        console.error('Error importing tasks from Todoist:', error);
         res.status(500).json({
             status: 'error',
-            error: 'Error syncing tasks',
+            error: 'Error importing tasks from Todoist',
             details: error.message,
         });
     }

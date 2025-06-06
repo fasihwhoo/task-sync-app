@@ -1,4 +1,4 @@
-// Task Sync - Handles task synchronization between Todoist and MongoDB
+// Task Sync - Handles one-way task synchronization from Todoist to MongoDB
 
 const Task = require('./taskSchema');
 const { checkSyncStatus } = require('./syncChecker');
@@ -33,9 +33,14 @@ const mapTodoistTaskToSchema = (todoistTask) => {
     };
 };
 
+/**
+ * Import/sync tasks from Todoist to MongoDB (one-way sync)
+ * This function only imports data FROM Todoist TO MongoDB
+ * It does not modify any data in Todoist
+ */
 async function syncTasks() {
     try {
-        console.log('🔄 Starting task sync...');
+        console.log('🔄 Starting Todoist to MongoDB import...');
 
         // Get sync status
         const { toCreate, toUpdate, toDelete, summary } = await checkSyncStatus();
@@ -60,7 +65,7 @@ async function syncTasks() {
             },
         }));
 
-        // Process tasks to delete
+        // Process tasks to delete (tasks that no longer exist in Todoist)
         const deleteOperations = toDelete.map((task) => ({
             deleteOne: {
                 filter: { todoid: task.todoid },
@@ -76,7 +81,7 @@ async function syncTasks() {
         }
 
         // Log results
-        console.log('\n✅ Sync Results:');
+        console.log('\n✅ Import Results:');
         console.log(`📥 Created: ${summary.createCount} tasks`);
         console.log(`✏️ Updated: ${summary.updateCount} tasks`);
         console.log(`🗑️ Deleted: ${summary.deleteCount} tasks`);
@@ -98,7 +103,7 @@ async function syncTasks() {
             completedCount,
         };
     } catch (error) {
-        console.error('❌ Sync failed:', error.message);
+        console.error('❌ Import failed:', error.message);
         if (error.response) {
             console.error('API Response:', {
                 status: error.response.status,

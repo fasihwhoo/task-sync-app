@@ -1,30 +1,20 @@
-# Todoist-MongoDB Sync
+# Todoist MongoDB Sync
 
-A Node.js application that synchronizes tasks between Todoist and MongoDB, providing a reliable backup and API interface for your Todoist tasks.
+A Node.js application that imports and syncs tasks from Todoist to MongoDB. This is a one-way sync system that keeps your MongoDB database up-to-date with your Todoist tasks.
 
 ## Features
 
--   Syncs both active and completed tasks from Todoist
--   Stores task history in MongoDB
--   RESTful API endpoints for task management
--   Automatic task synchronization
--   Detailed logging system
--   Real-time task updates
--   Separate endpoints for active and completed tasks
-
-## Tech Stack
-
--   Node.js
--   Express.js
--   MongoDB with Mongoose
--   Todoist REST API v2
--   Axios for HTTP requests
--   Nodemon for development
+-   One-way sync from Todoist to MongoDB
+-   Handles both active and completed tasks
+-   Preserves all task metadata (priority, labels, due dates, etc.)
+-   Bulk operations for efficient database updates
+-   Preview changes before applying them
+-   Detailed logging and error handling
 
 ## Prerequisites
 
--   Node.js (v12 or higher)
--   MongoDB (v4.0 or higher)
+-   Node.js (v14 or higher)
+-   MongoDB (v4.4 or higher)
 -   Todoist API Token
 
 ## Installation
@@ -32,7 +22,7 @@ A Node.js application that synchronizes tasks between Todoist and MongoDB, provi
 1. Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone <repo link>
 cd notion-todoist-sync
 ```
 
@@ -42,248 +32,215 @@ cd notion-todoist-sync
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
+3. Create a `.env` file in the root directory with the following variables:
 
 ```env
-MONGODB_URI=mongodb://localhost:27017/todoist-sync
+PORT=3000
+MONGODB_URI=your_mongodb_connection_string
 TODOIST_API_TOKEN=your_todoist_api_token
-PORT=8082
+```
+
+4. Start the server:
+
+```bash
+npm run dev  # for development with nodemon
+# or
+npm start    # for production
 ```
 
 ## API Endpoints
 
-### Task Management
+### Root Endpoint
 
--   **GET** `/tasks`
+```
+GET /tasks
+```
 
-    -   Retrieves all tasks directly from Todoist
-    -   Returns array of task objects in Todoist format
+Shows API status and available endpoints.
 
--   **GET** `/tasks/active`
+Response:
 
-    -   Retrieves only active (uncompleted) tasks from Todoist
-    -   Returns array of active task objects
-
-    ```json
-    [
-        {
-            "id": "1234567890",
-            "content": "Task title",
-            "description": "",
-            "is_completed": false,
-            "priority": 4,
-            "due": {
-                "date": "2024-03-15",
-                "string": "Mar 15",
-                "lang": "en"
-            }
-        }
-    ]
-    ```
-
--   **GET** `/tasks/completed`
-    -   Retrieves only completed tasks from Todoist
-    -   Returns array of completed task objects
-    ```json
-    [
-        {
-            "id": "0987654321",
-            "content": "Completed task",
-            "is_completed": true,
-            "completed_at": "2024-03-10T15:30:00Z"
-        }
-    ]
-    ```
-
-### Database Operations
-
--   **GET** `/tasks/db`
-
-    -   Retrieves all tasks from MongoDB database
-    -   Returns array of task objects in database format
-
--   **GET** `/tasks/sync`
-    -   Syncs tasks between Todoist and MongoDB
-    -   Returns sync statistics
-    ```json
-    {
-        "message": "Successfully synced tasks from Todoist",
-        "stats": {
-            "total": 15,
-            "failed": 0,
-            "success": 15,
-            "dbCount": 14,
-            "completedCount": 9
-        }
-    }
-    ```
-
-## Data Models
-
-### Task Schema
-
-```javascript
+```json
 {
-    todoid: {
-        type: String,
-        unique: true,
-        sparse: true,
-        index: true,
-    },
-    content: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        default: '',
-    },
-    is_completed: {
-        type: Boolean,
-        default: false,
-    },
-    labels: {
-        type: [String],
-        default: [],
-    },
-    priority: {
-        type: String,
-        enum: ['1', '2', '3', '4', null],
-        default: null,
-    },
-    due_date: {
-        type: Date,
-        default: null,
-    },
-    due_time: {
-        type: String,
-        default: '',
-    },
-    url: {
-        type: String,
-        default: '',
-    },
-    project_id: {
-        type: String,
-        default: '',
-    },
-    created_at: {
-        type: Date,
-        default: Date.now,
-    },
-    completed_at: {
-        type: Date,
-        default: null,
-    },
-    last_updated_by: {
-        type: String,
-        default: '',
-    },
-    source: {
-        type: String,
-        enum: ['todoist', 'notion'],
-        required: true,
+    "status": "success",
+    "message": "Task sync API is running",
+    "endpoints": {
+        "GET /tasks/db": "Get all tasks from database",
+        "GET /tasks/active": "Get active tasks",
+        "GET /tasks/completed": "Get completed tasks",
+        "GET /tasks/sync/check": "Check what needs to be synced from Todoist to MongoDB",
+        "POST /tasks/sync": "Import/sync tasks from Todoist to MongoDB (one-way sync)"
     }
 }
 ```
 
-## Project Structure
+### Check Sync Status
 
 ```
-notion-todoist-sync/
-├── routes/
-│   └── taskRoutes.js    # All task-related route handlers
-├── database/
-│   ├── config.js        # MongoDB connection
-│   ├── syncTodoistTasks.js # Sync logic
-│   └── taskSchema.js    # Mongoose schema
-├── todoist-tasks/
-│   └── todoist-task-fetcher.js # Todoist API integration
-├── logs/                # Task sync logs
-├── .env                # Environment variables
-├── .gitignore
-├── nodemon.json       # Nodemon config
-├── package.json
-├── package-lock.json
-└── server.js          # Express server setup
+GET /tasks/sync/check
 ```
 
-## Sync Logic
+Compares Todoist tasks with MongoDB and shows what would change during a sync.
 
-### Active Tasks
+Response:
 
--   Fetches active tasks from Todoist REST API v2
--   Endpoint: `https://api.todoist.com/rest/v2/tasks`
--   Headers: `Authorization: Bearer ${TODOIST_API_TOKEN}`
+```json
+{
+    "toCreate": [...],  // Tasks that will be created
+    "toUpdate": [...],  // Tasks that will be updated
+    "toDelete": [...],  // Tasks that will be deleted
+    "summary": {
+        "createCount": 0,
+        "updateCount": 0,
+        "deleteCount": 0,
+        "todoistCount": 0,
+        "mongoCount": 0
+    }
+}
+```
 
-### Completed Tasks
+### Perform Sync
 
--   Fetches completed tasks from Todoist Sync API v9
--   Endpoint: `https://api.todoist.com/sync/v9/completed/get_all`
--   Parameters:
-    -   `since`: Last 30 days (YYYY-MM-DD format)
-    -   `limit`: 200 (maximum allowed)
+```
+POST /tasks/sync
+```
 
-### Task Processing
+Imports tasks from Todoist to MongoDB. This is a one-way sync that:
 
-1. Fetches both active and completed tasks
-2. Maps Todoist task format to MongoDB schema
-3. Handles different task formats (active vs completed)
-4. Updates or creates tasks in MongoDB
-5. Maintains task completion status and timestamps
+1. Creates new tasks that exist in Todoist but not in MongoDB
+2. Updates existing tasks in MongoDB to match Todoist
+3. Deletes tasks from MongoDB that no longer exist in Todoist
+
+Response:
+
+```json
+{
+    "status": "success",
+    "message": "Successfully imported tasks from Todoist to MongoDB",
+    "created": 0,
+    "updated": 0,
+    "deleted": 0,
+    "todoistCount": 0,
+    "mongoCount": 0,
+    "finalCount": 0,
+    "completedCount": 0
+}
+```
+
+### View Database Tasks
+
+```
+GET /tasks/db
+```
+
+Returns all tasks currently stored in MongoDB.
+
+### View Active Tasks
+
+```
+GET /tasks/active
+```
+
+Returns all non-completed tasks from MongoDB.
+
+### View Completed Tasks
+
+```
+GET /tasks/completed
+```
+
+Returns all completed tasks from MongoDB.
+
+## Task Schema
+
+Tasks are stored in MongoDB with the following structure:
+
+```javascript
+{
+    todoid: String,          // Unique Todoist task ID
+    content: String,         // Task title/content
+    description: String,     // Task description
+    is_completed: Boolean,   // Completion status
+    labels: [String],        // Array of labels
+    priority: Number,        // Priority (1-4)
+    due_date: Date,         // Due date
+    due_time: String,       // Due time (if any)
+    url: String,            // Todoist task URL
+    project_id: String,     // Todoist project ID
+    created_at: Date,       // Creation timestamp
+    updated_at: Date,       // Last update timestamp
+    completed_at: Date,     // Completion timestamp
+    last_updated_by: String, // Source of last update
+    source: String          // 'todoist' or 'notion'
+}
+```
+
+## Sync Process Details
+
+### 1. Task Comparison (`syncChecker.js`)
+
+-   Fetches tasks from both Todoist and MongoDB
+-   Normalizes task data for comparison
+-   Identifies tasks to create, update, or delete
+-   Provides detailed sync preview
+
+### 2. Task Mapping (`syncTasks.js`)
+
+-   Converts Todoist task format to MongoDB schema
+-   Handles all task properties and metadata
+-   Ensures data type consistency
+-   Manages timestamps and IDs
+
+### 3. Bulk Operations
+
+-   Uses MongoDB bulkWrite for efficiency
+-   Performs all operations in a single database call
+-   Handles creates, updates, and deletes together
+
+### 4. Error Handling
+
+-   Validates API responses
+-   Provides detailed error messages
+-   Logs issues for debugging
+-   Maintains database consistency
 
 ## Error Handling
 
--   Detailed error logging for API requests
--   Task-level error tracking during sync
--   MongoDB connection error handling
--   API token validation
--   Rate limiting consideration
+The API uses standard HTTP status codes:
+
+-   200: Success
+-   500: Server error
+
+Error responses include:
+
+```json
+{
+    "status": "error",
+    "error": "Error message",
+    "details": "Detailed error information"
+}
+```
 
 ## Logging
 
--   JSON log files for each sync operation
--   Timestamp-based log file naming
--   Detailed task processing logs
--   Error and success tracking
+The application logs:
 
-## Development
+-   Sync operations and results
+-   API calls and responses
+-   Errors and exceptions
+-   Task changes and differences
 
-1. Start MongoDB server
-2. Run the application in development mode:
+Logs are stored in the `logs` directory with timestamps.
 
-```bash
-npm run dev
-```
+## Future Enhancements
 
-## Production
+Planned features:
 
-1. Set up MongoDB instance
-2. Configure environment variables
-3. Start the application:
-
-```bash
-npm start
-```
-
-## Recent Updates and Improvements
-
-### Code Organization (Latest Update)
-
--   Moved all route handlers to dedicated `routes` directory
--   Separated task-related routes into `taskRoutes.js`
--   Added new endpoints for active and completed tasks
--   Improved code modularity and maintainability
--   Enhanced API documentation
-
-### Future Enhancements
-
--   [ ] Add API rate limiting
--   [ ] Implement caching layer
--   [ ] Add task update webhooks
--   [ ] Improve error recovery mechanisms
--   [ ] Add automated tests
--   [ ] Add performance monitoring
+-   Two-way sync with Todoist
+-   Webhook support for real-time updates
+-   Task filtering and search
+-   Project-based sync options
+-   Batch operation controls
 
 ## Contributing
 
@@ -291,8 +248,8 @@ npm start
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
-5. Create a new Pull Request
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.

@@ -22,12 +22,12 @@ async function fetchActiveTasks() {
                 Authorization: `Bearer ${TODOIST_API_TOKEN}`,
             },
         });
-        console.log('Successfully fetched Active tasks');
         const activeTasksItems = ActiveTasksResponse.data || [];
-        console.log(`Found ${activeTasksItems.length} ACtive tasks`);
+        console.log(`📋 Found ${activeTasksItems.length} Active tasks`);
+        console.log('✅ Successfully fetched Active tasks');
         return ActiveTasksResponse.data;
     } catch (error) {
-        console.error('Error fetching active tasks:', error.response?.data || error.message);
+        console.error('❌ Error fetching active tasks:', error.response?.data || error.message);
         throw error;
     }
 }
@@ -50,10 +50,11 @@ async function fetchCompletedTasks() {
                 limit: 200, // Maximum allowed by API
             },
         });
-        console.log('Successfully fetched Completed tasks since:', sinceStr);
 
         const completedTasksItems = completedTasksResponse.data.items || [];
-        console.log(`Found ${completedTasksItems.length} completed tasks`);
+        console.log(`✔️  Found ${completedTasksItems.length} completed tasks`);
+
+        console.log('✅ Successfully fetched Completed tasks since:', sinceStr);
 
         // Then get full task details for each completed task
         const completedTasksWithDetails = completedTasksItems.map((item) => ({
@@ -62,10 +63,10 @@ async function fetchCompletedTasks() {
             completed_at: item.completed_date,
         }));
 
-        console.log(`Successfully processed ${completedTasksWithDetails.length} completed tasks`);
+        console.log(`✨ Successfully processed ${completedTasksWithDetails.length} completed tasks`);
         return completedTasksWithDetails;
     } catch (error) {
-        console.error('Error fetching completed tasks:', error.response?.data || error.message);
+        console.error('❌ Error fetching completed tasks:', error.response?.data || error.message);
         if (error.response) {
             console.error('API Response:', {
                 status: error.response.status,
@@ -80,10 +81,14 @@ async function fetchCompletedTasks() {
 async function fetchTodoistTasks() {
     try {
         // Fetch both active and completed tasks
-        console.log('Started fetching Active and Completed tasks...');
+        console.log('\n═══════════════ 🔄 Task Fetch Started ═══════════════');
+        console.log('🚀 Started fetching Active and Completed tasks...');
         const [activeTasks, completedTasks] = await Promise.all([fetchActiveTasks(), fetchCompletedTasks()]);
 
-        console.log(`Fetched ${activeTasks.length} active tasks and ${completedTasks.length} completed tasks`);
+        console.log('\n───────────── 📊 Task Statistics ─────────────');
+        // Calculate total tasks and log the breakdown between active and completed
+        const totalTasks = activeTasks.length + completedTasks.length;
+        console.log(`📊 Total tasks: ${totalTasks} (${activeTasks.length} active, ${completedTasks.length} completed)`);
 
         // Combine tasks and ensure completed tasks are marked
         const allTasks = [...activeTasks, ...completedTasks];
@@ -102,11 +107,12 @@ async function fetchTodoistTasks() {
 
         // Save tasks to file for logging
         await fs.writeFile(filePath, JSON.stringify(allTasks, null, 2));
-        console.log(`Tasks saved to ${filePath}`);
+        console.log(`💾 Tasks saved to ${filePath}`);
+        console.log('═══════════════════════════════════════════════════\n');
 
         return allTasks;
     } catch (error) {
-        console.error('Error in fetchTodoistTasks:', error.message);
+        console.error('❌ Error in fetchTodoistTasks:', error.message);
         if (error.response) {
             console.error('API Response:', {
                 status: error.response.status,

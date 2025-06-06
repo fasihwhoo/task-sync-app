@@ -105,11 +105,45 @@ async function checkSyncStatus() {
             }
         }
 
-        // Log summary
-        console.log('\n📊 Sync Check Summary:');
+        // Log summary with borders
+        console.log('\n═══════════════ 📊 Sync Check Summary ═══════════════');
         console.log(`📥 To Create: ${toCreate.length} tasks`);
         console.log(`✏️ To Update: ${toUpdate.length} tasks`);
         console.log(`🗑️ To Delete: ${toDelete.length} tasks`);
+
+        if (toCreate.length > 0) {
+            console.log('\n───────────── 📥 Tasks to Create ─────────────');
+            toCreate.forEach((task) => {
+                console.log(`  • "${task.content}" (${task.id})`);
+                if (task.due) {
+                    console.log(`    Due: ${task.due.date || task.due.datetime || 'Not set'}`);
+                }
+            });
+        }
+
+        if (toUpdate.length > 0) {
+            console.log('\n───────────── ✏️ Tasks to Update ─────────────');
+            toUpdate.forEach(({ todoid, todoistData, mongoData }) => {
+                console.log(`  • "${todoistData.content}" (ID: ${todoid})`);
+                const todoistNorm = normalizeTaskForComparison(todoistData);
+                const mongoNorm = normalizeTaskForComparison(mongoData);
+
+                Object.keys(todoistNorm).forEach((key) => {
+                    if (JSON.stringify(todoistNorm[key]) !== JSON.stringify(mongoNorm[key])) {
+                        console.log(`    - ${key}: ${mongoNorm[key]} → ${todoistNorm[key]}`);
+                    }
+                });
+            });
+        }
+
+        if (toDelete.length > 0) {
+            console.log('\n───────────── 🗑️ Tasks to Delete ─────────────');
+            toDelete.forEach((task) => {
+                console.log(`  • "${task.content}" (${task.todoid})`);
+            });
+        }
+
+        console.log('═══════════════════════════════════════════════════\n');
 
         return {
             toCreate,

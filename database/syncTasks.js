@@ -40,6 +40,7 @@ const mapTodoistTaskToSchema = (todoistTask) => {
  */
 async function syncTasks() {
     try {
+        console.log('\n═══════════════ 🔄 Task Sync Started ═══════════════');
         console.log('🔄 Starting Todoist to MongoDB import...');
 
         // Get sync status
@@ -114,11 +115,13 @@ async function syncTasks() {
             await Task.bulkWrite(operations);
         }
 
-        // Log results
-        console.log('\n✅ Import Results:');
+        // Log results with borders
+        console.log('\n═══════════════ ✅ Import Results ═══════════════');
         console.log(`📥 Created: ${summary.createCount} tasks`);
         console.log(`✏️ Updated: ${summary.updateCount} tasks`);
         console.log(`🗑️ Deleted: ${summary.deleteCount} tasks`);
+
+        console.log('\n───────────── 📊 Final Statistics ─────────────');
         console.log(`📊 Total tasks in Todoist: ${summary.todoistCount}`);
         console.log(`📊 Total tasks in MongoDB: ${summary.mongoCount}`);
 
@@ -126,6 +129,7 @@ async function syncTasks() {
         const finalCount = await Task.countDocuments();
         const completedCount = await Task.countDocuments({ is_completed: true });
         console.log(`🗃️ Final task count: ${finalCount} (${completedCount} completed)`);
+        console.log('═══════════════════════════════════════════════════\n');
 
         return {
             created: summary.createCount,

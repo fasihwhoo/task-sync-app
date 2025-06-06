@@ -1,7 +1,7 @@
 // Task Sync - Handles one-way task synchronization from Todoist to MongoDB
 
 const Task = require('./taskSchema');
-const { checkSyncStatus } = require('./syncChecker');
+const { checkSyncStatus, normalizeTaskForComparison } = require('./syncChecker');
 
 // Map Todoist task to MongoDB schema format
 const mapTodoistTaskToSchema = (todoistTask) => {
@@ -44,6 +44,40 @@ async function syncTasks() {
 
         // Get sync status
         const { toCreate, toUpdate, toDelete, summary } = await checkSyncStatus();
+
+        // Show detailed changes
+        if (toCreate.length > 0) {
+            console.log('\n📥 Tasks to be Created:');
+            toCreate.forEach((task) => {
+                console.log(`  • "${task.content}" (${task.id})`);
+                if (task.due) {
+                    console.log(`    Due: ${task.due.date || task.due.datetime || 'Not set'}`);
+                }
+            });
+        }
+
+        if (toUpdate.length > 0) {
+            console.log('\n✏️ Tasks to be Updated:');
+            toUpdate.forEach(({ todoid, todoistData, mongoData }) => {
+                console.log(`  • "${todoistData.content}" (ID: ${todoid})`);
+                // Compare and show what's changing
+                const todoistNorm = normalizeTaskForComparison(todoistData);
+                const mongoNorm = normalizeTaskForComparison(mongoData);
+
+                Object.keys(todoistNorm).forEach((key) => {
+                    if (JSON.stringify(todoistNorm[key]) !== JSON.stringify(mongoNorm[key])) {
+                        console.log(`    - ${key}: ${mongoNorm[key]} → ${todoistNorm[key]}`);
+                    }
+                });
+            });
+        }
+
+        if (toDelete.length > 0) {
+            console.log('\n🗑️ Tasks to be Deleted:');
+            toDelete.forEach((task) => {
+                console.log(`  • "${task.content}" (${task.todoid})`);
+            });
+        }
 
         // Process tasks to create
         const createOperations = toCreate.map((task) => ({

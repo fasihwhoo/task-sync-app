@@ -53,6 +53,21 @@ router.get('/sync/check', async (req, res) => {
 // POST /tasks/sync - Import tasks from Todoist to MongoDB (one-way sync)
 router.post('/sync', async (req, res) => {
     try {
+        // First check what needs to be synced
+        console.log('\n🔍 Checking sync status before proceeding...');
+        const syncStatus = await checkSyncStatus();
+
+        // If nothing to sync, return early
+        if (syncStatus.toCreate.length === 0 && syncStatus.toUpdate.length === 0 && syncStatus.toDelete.length === 0) {
+            return res.json({
+                status: 'success',
+                message: 'Everything is already in sync',
+                summary: syncStatus.summary,
+            });
+        }
+
+        // Proceed with sync
+        console.log('\n🔄 Proceeding with sync...');
         const result = await syncTasks();
         res.json({
             status: 'success',

@@ -8,13 +8,11 @@ const taskRoutes = require('./routes/taskRoutes');
 
 // Initialize Express app
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
 connectDB();
-
-// Middleware
-app.use(express.json());
 
 // Root endpoint - Shows server status
 app.get('/', (req, res) => {

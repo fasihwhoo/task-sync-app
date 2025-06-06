@@ -30,8 +30,15 @@ const taskSchema = new mongoose.Schema(
         },
         priority: {
             type: String,
-            enum: ['1', '2', '3', '4', null],
-            default: null,
+            enum: ['1', '2', '3', '4'],
+            default: '4',
+            index: true,
+            validate: {
+                validator: function (v) {
+                    return ['1', '2', '3', '4'].includes(v);
+                },
+                message: (props) => `${props.value} is not a valid priority! Must be '1', '2', '3', or '4'`,
+            },
         },
         due_date: {
             type: Date,
